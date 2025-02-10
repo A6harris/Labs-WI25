@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from src.maze_env import MazeEnv
 from typing import List, Callable, Tuple
 import matplotlib.animation as animation
+import random
 
 # Define the states and possible actions
 states = np.arange(1, 6)  # States 1 through 5
@@ -22,8 +23,17 @@ def transition(state, action):
     int: The next state.
     """
     # TODO: Your code here
-    ...
-
+    if action == 'stay':
+        return state
+    elif action == 'left':
+        if state > 1 and state <= 6:
+            state -= 1
+            return state
+    elif action == 'right':
+        if state >= 1 and state < 6:
+            state += 1
+            return state
+    return (state)
 
 def reward(state, action):
     """
@@ -37,7 +47,12 @@ def reward(state, action):
     int: The reward.
     """
     # TODO: Your code here
-    ...
+    if state == 4 and action == 'right':
+        reward = 10
+        return reward
+    else:
+        reward = -1
+        return reward
 
 
 
@@ -66,7 +81,25 @@ def my_policy(state):
     str: The action chosen by the policy.
     """
     # TODO: Your code here
-    ...
+    i == random.randon()
+    if state >= 1 and state < 3:
+        if i < 0.5:
+            return 'right'
+        elif i >= 0.5:
+            return 'stay'
+    if state < 3 and state <= 6:
+        if i < 0.5:
+            return 'left'
+        elif i >= 0.5:
+            return 'stay'
+    elif i < 0.3:
+        return 'left'
+    elif i >= 0.3 and i < 0.6:
+        return 'stay'
+    elif i >= 0.6:
+        return 'right'
+
+        
 
         
 def simulate_mdp(policy: Callable, initial_state=1, simulation_depth=20):
