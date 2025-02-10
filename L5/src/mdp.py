@@ -81,7 +81,7 @@ def my_policy(state):
     str: The action chosen by the policy.
     """
     # TODO: Your code here
-    i == random.randon()
+    i = random.random()
     if state >= 1 and state < 3:
         if i < 0.5:
             return 'right'
@@ -121,21 +121,35 @@ def simulate_mdp(policy: Callable, initial_state=1, simulation_depth=20):
     """
     current_state = initial_state
     cumulative_reward = 0
-    state_visits = np.zeros(len(states)) # Track the number of visits to each state
-    visited_history = [current_state] # Track the history of visited states
-    reward_history = [0] # Track the history of rewards
+    state_visits = np.zeros(len(states))
+    visited_history = [current_state] 
+    reward_history = [0]
     
     for _ in range(simulation_depth):
-        # TODO: Your code here
-        ...
-
+        action = policy(current_state)
+        current_reward = reward(current_state, action)
+        cumulative_reward += current_reward
+        state_visits[current_state - 1] += 1
+        next_state = transition(current_state, action)
+        reward_history.append(current_reward)
+        visited_history.append(next_state)
+        if current_state == 4 and action == 'right':
+            break
+            
+        current_state = next_state
     
     return state_visits, cumulative_reward, visited_history, reward_history
 
-
 def new_policy(state: List[int]) -> int:
-    # TODO: Your code here
-    ...
+    current_state = state[0] if isinstance(state, (list, tuple)) else state
+
+    if current_state == 4:
+        return 0 
+    elif current_state < 4:
+        return 0  
+    elif current_state > 4:
+        return 1  
+    return 2
 
         
 def simulate_maze_env(env: MazeEnv, policy: Callable, num_steps=20):
@@ -157,9 +171,17 @@ def simulate_maze_env(env: MazeEnv, policy: Callable, num_steps=20):
 
     for _ in range(num_steps):
         # TODO: Your code here
-        ...
-
-
+        action = policy(state)
+        
+        next_state, reward, done, _ = env.step(action)
+        
+        total_reward += reward
+        
+        path.append(next_state)
+        
+        state = next_state
+        if done:
+            break
     return path, total_reward
 
 
@@ -177,17 +199,87 @@ def q_learning(env: MazeEnv, episodes=500, alpha=0.1, gamma=0.99, epsilon=0.1) -
     Returns:
         np.ndarray: The learned Q-table.
     """
-    q_table = ... # TODO: Your code here
+    """
+    Perform Q-learning to learn the optimal policy for the given environment.
+    Modified to handle both Discrete and Box observation spaces with proper state dimensioning.
 
+    Args:
+        env (MazeEnv): The environment to learn the policy for.
+        episodes (int, optional): Number of episodes for training. Defaults to 500.
+        alpha (float, optional): Learning rate. Defaults to 0.1.
+        gamma (float, optional): Discount factor. Defaults to 0.99.
+        epsilon (float, optional): Exploration rate. Defaults to 0.1.
 
+    Returns:
+        np.ndarray: The learned Q-table.
+    """
+    states_seen = set()
+    state = env.reset()
+    if isinstance(state, tuple):
+        state = state[0]
+    states_seen.add(int(state[0]) if isinstance(state, (tuple, list, np.ndarray)) else int(state))
+    
+    # Sample some random actions to explore state space
+    for _ in range(100):
+        action = env.action_space.sample()
+        next_state, _, done, _ = env.step(action)
+        state_val = int(next_state[0]) if isinstance(next_state, (tuple, list, np.ndarray)) else int(next_state)
+        states_seen.add(state_val)
+        if done:
+            state = env.reset()
+            if isinstance(state, tuple):
+                state = state[0]
+            states_seen.add(int(state[0]) if isinstance(state, (tuple, list, np.ndarray)) else int(state))
+    
+    # Calculate grid size
+    state_size = int(np.sqrt(max(states_seen) + 1))
+    
+    # Initialize Q-table
+    q_table = np.zeros((state_size, state_size, env.action_space.n))
+    
     for episode in range(episodes):
-        # TODO: Your code here
-        ...
-
-
+        state = env.reset()
+        if isinstance(state, tuple):
+            state = state[0]
+        done = False
+        
+        while not done:
+            # Get current state index
+            state_val = int(state[0]) if isinstance(state, (tuple, list, np.ndarray)) else int(state)
+            row = state_val // state_size
+            col = state_val % state_size
+            
+            # Epsilon-greedy action selection
+            if random.uniform(0, 1) < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(q_table[row, col])
+            
+            # Take action
+            next_state, reward, done, info = env.step(action)
+            if isinstance(info, tuple):
+                done = info[0]
+                info = info[1]
+            
+            # Get next state indices
+            next_state_val = int(next_state[0]) if isinstance(next_state, (tuple, list, np.ndarray)) else int(next_state)
+            next_row = next_state_val // state_size
+            next_col = next_state_val % state_size
+            
+            # Update Q-value
+            old_value = q_table[row, col, action]
+            next_max = np.max(q_table[next_row, next_col])
+            new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+            q_table[row, col, action] = new_value
+            
+            state = next_state
+            
+            if done:
+                break
+    
     return q_table
-
-
+    
+    return q_table
 def simulate_maze_env_q_learning(
     env: MazeEnv, q_table: np.ndarray
 ) -> Tuple[List[Tuple[int, int]], bool]:
@@ -211,7 +303,8 @@ def simulate_maze_env_q_learning(
     states = [state]  # List to store states
 
     while not done:
-        action = ... # TODO: Your code here
+        state_idx = int(state[0]) if isinstance(state, (tuple, list, np.ndarray)) else int(state)
+        action = np.argmax(q_table[state_idx]) # TODO: Your code here
         state, _, done, _ = env.step(action)
         frames.append(
             env.render(mode="rgb_array").T

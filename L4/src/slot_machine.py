@@ -62,13 +62,21 @@ def main(epsilon: float = 0.1, mode: str = "manual"):
         # AI mode action
         if mode == "AI":
             # TODO: Implement the epsilon-greedy algorithm
+            if np.random.rand() < epsilon:
+                greedy = np.argmax(estimated_rewards)
             # TODO:  Select a machine to play, save that to chosen_machine
+                chosen_machine = np.random.choice([i for i in range(n_machines) if i != greedy])
+            else:
+                chosen_machine = np.argmax(estimated_rewards)
 
             # TODO: update the estimated rewards and play counts, update the estimated_reward for the chosen machine
-
+            reward = np.random.rand() < true_rewards_probabilities[chosen_machine]
+            play_counts[chosen_machine] += 1
+            estimated_rewards[chosen_machine] = update(estimated_rewards[chosen_machine], reward, play_counts[chosen_machine] - 1)
             # TODO: calculate the reward and update the total reward
-
+            total_reward += reward - cost_per_play
             # Add a small delay to see the AI in action
+            pygame.time.wait(100)
             # Draw the selected machine's picture in AI mode
             chosen_image = pygame.image.load("pull.jpg")
             chosen_image = pygame.transform.scale(chosen_image, (50, 50))
